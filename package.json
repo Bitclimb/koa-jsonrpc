@@ -1,0 +1,25 @@
+{
+  "name": "koa-jsonrpc",
+  "version": "1.0.0",
+  "description": "Json RPC 2 middleware implementation on Koa v2",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./node_modules/.bin/mocha ./**/*.spec.js"
+  },
+  "keywords": [
+    "koa",
+    "json-rpc",
+    "rpc"
+  ],
+  "author": "unibtc@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "co-body": "^5.1.1"
+},
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "koa": "^2.4.1",
+    "mocha": "^4.1.0",
+    "supertest": "^3.0.0"
+  }
+}
