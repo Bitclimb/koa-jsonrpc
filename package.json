@@ -11,6 +11,10 @@
     "json-rpc",
     "rpc"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Bitclimb/koa-jsonrpc.git"
+  },
   "author": "unibtc@gmail.com",
   "license": "MIT",
   "dependencies": {
