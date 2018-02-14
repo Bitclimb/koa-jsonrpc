@@ -11,12 +11,32 @@ Json-RPC 2 middleware implementation on Koa v2
 npm install koa-jsonrpc --save
 ```
 
+## Options
+
+- limit[String] - sets the maximum size allowed for requests
+- auth[Object] - requires requests to have a valid HMAC256 of the username and password as its authorization header
+
+## Authorization
+```js
+//generating authorization header
+const crypto = require('crypto');
+const token = crypto.createHmac('sha256','mypass').update('myuser').digest('hex')
+console.log(token) // will print out the token, and you can add this on the header of your request.
+```
+
 ## Usage
 ```js
 const Koa = require('koa');
 const app = new Koa();
 const koaJsonRpc = require('koa-jsonrpc');
-const jrpc2 = koaJsonRpc({ limit: '20mb' });
+const options = {
+  limit: '20mb', // optional, defaults to 1mb
+  auth: { // optional, will require authorization header
+    username: 'myuser',
+    password: 'mypass'
+  }
+}
+const jrpc2 = koaJsonRpc(options);
 
 // Add methods
 jrpc2.use('user', async function user() {
