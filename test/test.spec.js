@@ -214,6 +214,15 @@ describe('koa-json-rpc2', () => {
         done();
       });
   });
+  it('return invalid request error with non-null id on invalid request method', done => {
+    request.patch('/')
+      .set('Authorization', `Token ${token}`)
+      .send(invalidJsonId)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(invalidRequestErrorId);
+        done();
+      });
+  });
   it('return method not found error on unknown method request', done => {
     request.post('/')
       .set('Authorization', `Token ${token}`)
