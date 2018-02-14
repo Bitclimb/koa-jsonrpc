@@ -1,48 +1,38 @@
 const jsonResp = require('./lib/RpcResponse');
 const jsonError = require('./lib/RpcError');
+const crypto = require('crypto');
 const parse = require('co-body');
+const InvalidParamsError = require('./lib/RpcInvalidError');
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 
-class InvalidParamsError extends Error {
-  constructor(message) {
-    let caption;
-    let stack;
-    super();
-    this.name = 'InvalidParamsError';
-    this.message = message;
-    stack = (new Error()).stack.split('\n');
-    if (message) {
-      caption = `${this.name}: ${message}`;
-    } else {
-      caption = this.name;
-    }
-    stack.splice(0, 2, caption);
-    this.stack = stack.join('\n');
-  }
-
-  toString() {
-    return this.stack;
-  }
-}
-
 class koaJsonRpc {
-  constructor(opts) {
-    this.limit;
+  constructor (opts) {
+    this.limit = '1mb';
     this.registry = Object.create(null);
     if (opts) {
-      this.limit = opts.limit;
+      this.limit = opts.limit || this.limit;
+      this.auth = opts.auth;
     }
-    if (!this.limit) {
-      this.limit = '1mb';
+    if (this.auth && (!hasOwnProperty(this.auth, 'username') || !hasOwnProperty(this.auth, 'password'))) {
+      throw new Error('Invalid options parameters!');
+    }
+    if (this.auth) {
+      this.token = crypto.createHmac('sha256', this.auth.password).update(this.auth.username).digest('hex');
     }
   }
-  use(name, func) {
+  use (name, func) {
     this.registry[name] = func;
   }
-  app() {
+  app () {
     return async (ctx, next) => {
-      let body;
-      let result;
+      let body, result;
+      if (this.token) {
+        const headerToken = ctx.get('authorization').split(' ').pop();
+        if (headerToken !== this.token) {
+          ctx.body = jsonResp(null, jsonError.Unauthorized());
+          return;
+        }
+      }
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {

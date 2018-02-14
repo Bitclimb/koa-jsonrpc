@@ -19,7 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "co-body": "^5.1.1"
-},
+  },
   "devDependencies": {
     "chai": "^4.1.2",
     "koa": "^2.4.1",

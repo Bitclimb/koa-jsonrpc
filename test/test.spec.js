@@ -1,7 +1,10 @@
 const expect = require('chai').expect;
 const app = require('./test_server');
 const supertest = require('supertest');
+const crypto = require('crypto');
 const request = supertest.agent(app.callback());
+
+const token = crypto.createHmac('sha256', 'mypass').update('myuser').digest('hex');
 
 const parseError = {
   jsonrpc: '2.0',
@@ -25,7 +28,14 @@ const invalidRequestError = {
   },
   id: null
 };
-
+const unauthorizedError = {
+  jsonrpc: '2.0',
+  error: {
+    code: -32604,
+    message: 'Unauthorized'
+  },
+  id: null
+};
 const invalidJsonId = {
   firstName: 'John',
   lastName: 'Dow',
@@ -162,93 +172,121 @@ for (i = 0; i < 512; i += 1) {
 describe('koa-json-rpc2', () => {
   it('return parse error on non-json call', done => {
     request.post('/')
-        .send('Malformed string')
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(parseError);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send('Malformed string')
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(parseError);
+        done();
+      });
   });
   it('return invalid request error with null id on not valid request', done => {
     request.post('/')
-        .send(invalidJson)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(invalidRequestError);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(invalidJson)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(invalidRequestError);
+        done();
+      });
+  });
+  it('return unauthorized error with null id on missing authorization header', done => {
+    request.post('/')
+      .send(sumQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(unauthorizedError);
+        done();
+      });
+  });
+  it('return unauthorized error with null id on incorrect authorization header', done => {
+    request.post('/')
+      .set('Authorization', `Token incorrectToken`)
+      .send(sumQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(unauthorizedError);
+        done();
+      });
   });
   it('return invalid request error with non-null id on not valid request', done => {
     request.post('/')
-        .send(invalidJsonId)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(invalidRequestErrorId);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(invalidJsonId)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(invalidRequestErrorId);
+        done();
+      });
   });
   it('return method not found error on unknown method request', done => {
     request.post('/')
-        .send(otherQuery)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(methodNotFoundError);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(otherQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(methodNotFoundError);
+        done();
+      });
   });
   it('return result for call without arguments', done => {
     request.post('/')
-        .send(userQuery)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(userResponce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(userQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(userResponce);
+        done();
+      });
   });
   it('return result for call without arguments', done => {
     request.post('/')
-        .send(sumQuery)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(sumResponce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(sumQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(sumResponce);
+        done();
+      });
   });
   it('have access to koa context passed to rpc method', done => {
     request.post('/')
-        .send(ctxQuery)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(ctxResponce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(ctxQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(ctxResponce);
+        done();
+      });
   });
   it('have return internal error as result of throw inside RPC method', done => {
     request.post('/')
-        .send(internalQuery)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(internalResponce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(internalQuery)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(internalResponce);
+        done();
+      });
   });
   it('have return result for correct parameters', done => {
     request.post('/')
-        .send(checkParams1Query)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(checkParams1Responce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(checkParams1Query)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(checkParams1Responce);
+        done();
+      });
   });
   it('have return invalid params error error as result of throw InvalidParamsError inside RPC method', done => {
     request.post('/')
-        .send(checkParams2Query)
-        .end((err, res) => {
-          expect(JSON.parse(res.text)).to.deep.equal(checkParams2Responce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(checkParams2Query)
+      .end((err, res) => {
+        expect(JSON.parse(res.text)).to.deep.equal(checkParams2Responce);
+        done();
+      });
   });
   it('should handle large sized JSONs', done => {
     request.post('/')
-        .send(checkBigJsonQuery)
-        .end((err, res) => {
-          if (err) {
-            done(err);
-          }
-          expect(JSON.parse(res.text)).to.deep.equal(checkBigJsonResponce);
-          done();
-        });
+      .set('Authorization', `Token ${token}`)
+      .send(checkBigJsonQuery)
+      .end((err, res) => {
+        if (err) {
+          done(err);
+        }
+        expect(JSON.parse(res.text)).to.deep.equal(checkBigJsonResponce);
+        done();
+      });
   });
 });
